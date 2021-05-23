@@ -1,6 +1,7 @@
 var spriteCreator = require("spriteCreator");
 var perfectLabel = require("perfectLabel");
 var storageManager = require("storageManager");
+const StateMachine = require("./state-machine");
 var fsm = new StateMachine({
     data:{
         gameDirector:null,
