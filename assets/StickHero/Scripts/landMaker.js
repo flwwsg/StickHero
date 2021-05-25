@@ -28,34 +28,38 @@ var fsm = new StateMachine({
             gameDirector.stick.x = gameDirector.hero.x + gameDirector.hero.width * (1-gameDirector.hero.anchorX) + gameDirector.stick.width * gameDirector.stick.anchorX;
             var ani = gameDirector.hero.getComponent(cc.Animation);
             ani.play('heroPush');
+            console.log('hero push');
         },
         onHeroTick(){
             gameDirector.stickLengthen = false;
             var ani = gameDirector.hero.getComponent(cc.Animation);
             ani.play('heroTick');
+            console.log('hero tick');
         },
         onStickFall(){
             //stick fall action.
-            var stickFall = cc.rotateBy(0.5, 90);
+            console.log('on stick fall');
+            const stickFall = cc.rotateBy(0.5, 90);
             stickFall.easing(cc.easeIn(3));
-            var callFunc = cc.callFunc(function(){
-                var stickLength = gameDirector.stick.height-gameDirector.stick.width * gameDirector.stick.anchorX;
+            const cb = cc.callFunc(function(){
+                const stickLength = gameDirector.stick.height-gameDirector.stick.width * gameDirector.stick.anchorX;
                 if(stickLength < gameDirector.currentLandRange || stickLength > gameDirector.currentLandRange+gameDirector.secondLand.width){//failed.
                     fsm.heroMoveToStickEnd();
-                }else{//successed
+                }else{
+                    // success 成功
                     fsm.heroMoveToLand();
-                    if(stickLength > gameDirector.currentLandRange + gameDirector.secondLand.width/2-5 
+                    if(stickLength > gameDirector.currentLandRange + gameDirector.secondLand.width/2-5
                         &&stickLength < gameDirector.currentLandRange + gameDirector.secondLand.width/2+5){
                         gameDirector.perfect ++;
                         gameDirector.getScore(gameDirector.perfect);
-                        var pl = gameDirector.perfectLabel.getComponent(perfectLabel);
+                        const pl = gameDirector.perfectLabel.getComponent(perfectLabel);
                         pl.showPerfect(gameDirector.perfect);
                     }else{
                         gameDirector.perfect = 0;
                     }
                 }
             });
-            var se =cc.sequence(stickFall,callFunc);
+            const se =cc.sequence(stickFall, cb);
             gameDirector.stick.runAction(se);
         },
         onHeroMoveToLand(){
@@ -75,8 +79,9 @@ var fsm = new StateMachine({
             gameDirector.landCreateAndMove(callFunc);
         },
         onHeroMoveToStickEnd(){
-            var ani = gameDirector.hero.getComponent(cc.Animation);
-            var callFunc = cc.callFunc(function(){
+            console.log('hero run');
+            const ani = gameDirector.hero.getComponent(cc.Animation);
+            const callFunc = cc.callFunc(function(){
                 ani.stop('heroRun');
                 fsm.heroDown();
             });
@@ -84,7 +89,8 @@ var fsm = new StateMachine({
             gameDirector.heroMove(gameDirector.hero,{length:gameDirector.stick.height,callFunc:callFunc});
         },
         onHeroDown(){
-             var callFunc = cc.callFunc(function(){
+            console.log('hero down');
+             const callFunc = cc.callFunc(function(){
                 fsm.gameOver();
             });
             gameDirector.stickAndHeroDownAction(callFunc);
@@ -114,7 +120,7 @@ cc.Class({
         stickWidth:6,
         canvas:cc.Node,
         scoreLabel:cc.Label,
-        hightestScoreLabel:cc.Label,
+        highestScoreLabel:cc.Label,
         overLabel:cc.Label,
         perfectLabel:cc.Node
     },
@@ -122,26 +128,28 @@ cc.Class({
         //init data
         // alert(storageManager.getHighestScore());
         gameDirector = this;
-        this.runLength = 0,
+        this.runLength = 0;
         this.stick = null;
         this.stickLengthen = false;
         this.score = 0;
         this.perfect = 0;
         this.currentLandRange = 0;
         this.heroWorldPosX = 0;
-        this.changeHightestScoreLabel();
+        this.changeHighestScoreLabel();
 
         //create new land;
         this.createNewLand();
         var range = this.getLandRange();
         this.heroWorldPosX = this.firstLand.width - (1-this.hero.anchorX) * this.hero.width - this.stickWidth;
         this.secondLand.setPosition(range+this.firstLand.width,0);
-        
+
         this.registerEvent();
         //init hero animation callback.
-        var ani = gameDirector.hero.getComponent(cc.Animation);
-        ani.on('stop',(event)=>{
-            if(event.target.name =='heroTick'){
+        const ani = gameDirector.hero.getComponent(cc.Animation);
+        // target 对象可以为空
+        ani.on('stop',(type, state, target)=>{
+            console.log('on stop event', type, state, target);
+            if(state.name === 'heroTick'){
                 fsm.stickFall();
             }
         });
@@ -157,7 +165,7 @@ cc.Class({
         console.log("off");
     },
     update(dt){
-        // console.log(dt);
+        // 每秒更新棍子长度
         if(this.stickLengthen){
             this.stick.height += dt*this.stickSpeed;
             // this.stick.height = this.currentLandRange + this.secondLand.width/2;
@@ -177,18 +185,18 @@ cc.Class({
     },
     stickAndHeroDownAction(callFunc){
         //stick down action;
-        var stickAction = cc.rotateBy(0.5, 90);
+        const stickAction = cc.rotateBy(0.5, 90);
         stickAction.easing(cc.easeIn(3));
         this.stick.runAction(stickAction);
         //hero down action;
-        var heroAction = cc.moveBy(0.5,cc.p(0,-300 - this.hero.height));
+        const heroAction = cc.moveBy(0.5,cc.v2(0,-300 - this.hero.height));
         heroAction.easing(cc.easeIn(3));
-        var seq =cc.sequence(heroAction,callFunc);
+        const seq =cc.sequence(heroAction,callFunc);
         this.hero.runAction(seq);
     },
     heroMove(target,data){
-        var time = data.length/this.heroMoveSpeed;
-        var heroMove = cc.moveBy(time,cc.p(data.length,0));
+        const time = data.length/this.heroMoveSpeed;
+        const heroMove = cc.moveBy(time,cc.v2(data.length,0));
         if(data.callFunc){
             var se =cc.sequence(heroMove,data.callFunc);
             this.hero.runAction(se);
@@ -201,7 +209,7 @@ cc.Class({
         //firstland;
         var length = this.currentLandRange + this.secondLand.width;
         this.runLength +=length;
-        var action = cc.moveBy(this.moveDuration,cc.p(-length,0));
+        var action = cc.moveBy(this.moveDuration,cc.v2(-length,0));
         this.node.runAction(action);
         this.firstLand = this.secondLand;
 
@@ -213,7 +221,7 @@ cc.Class({
         //secondland;
         this.secondLand.setPosition(this.runLength+winSize.width,0);
         var l = winSize.width - range - this.heroWorldPosX - this.hero.width * this.hero.anchorX - this.stickWidth;
-        var secondAction = cc.moveBy(this.moveDuration,cc.p(-l,0));
+        var secondAction = cc.moveBy(this.moveDuration,cc.v2(-l,0));
         var seq =cc.sequence(secondAction,callFunc);
         this.secondLand.runAction(seq);
     },
@@ -229,18 +237,18 @@ cc.Class({
     },
     getScore(num){
         if(num){
-            this.score += num;  
+            this.score += num;
         }else{
             this.score++;
         }
         if(storageManager.getHighestScore()<this.score){
             storageManager.setHighestScore(this.score);
-            this.changeHightestScoreLabel();
+            this.changeHighestScoreLabel();
         }
         this.scoreLabel.string = "得分:"+this.score;
     },
-    changeHightestScoreLabel(){
-        this.hightestScoreLabel.string = "最高分:" + storageManager.getHighestScore();
+    changeHighestScoreLabel(){
+        this.highestScoreLabel.string = "最高分:" + storageManager.getHighestScore();
     },
     getLandRange(){
         this.currentLandRange = this.landRange.x +(this.landRange.y - this.landRange.x)*Math.random();
